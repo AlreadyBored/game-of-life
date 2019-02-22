@@ -18,15 +18,28 @@
       <h1>Playfield</h1>
       <button @click='switchGenerations'>Switch to nex gen</button>
       <button @click='nextGeneration'>Calculate next gen</button>
-      <div class="playfield">
+      <div  v-if='!tmblr'
+            class="playfield">
         <div v-for="(row, indexR) in playfield" 
              :key="'r' + indexR"
              class='playfield-row'>
           <div v-for="(cell, indexС) in row" 
-               @click='setType(indexR, indexС)'
+               @click='setType(playfield, indexR, indexС)'
                :key="'c' + indexС"
                class='playfield-cell'
-               :class='statusCell(indexR, indexС)'></div>
+               :class='statusCell(playfield, indexR, indexС)'>{{indexR}} {{indexС}}</div>
+       </div>
+      </div>
+      <div  v-if='tmblr'
+            class="playfield">
+        <div v-for="(row, indexR) in nextTurn" 
+             :key="'r' + indexR"
+             class='playfield-row'>
+          <div v-for="(cell, indexС) in row" 
+               @click='setType(nextTurn, indexR, indexС)'
+               :key="'c' + indexС"
+               class='playfield-cell'
+               :class='statusCell(nextTurn, indexR, indexС)'>{{indexR}} {{indexС}}</div>
        </div>
       </div>      
     </div>
@@ -39,6 +52,7 @@ export default {
   data() {
     return {
       dims: '',
+      tmblr: false,
       dimensions: {
         rows: null,
         cols: null
@@ -66,26 +80,93 @@ export default {
     nextGeneration() {
       const f = this.playfield,
       fn = this.nextTurn;
-      for(let i = 0; i < f.length; i++) {
-        for(let j = 0; j < f[i].length; j++) {
+
+      for(let i = 0; i < this.dimensions.rows; i++) {
+        console.log(1);
+        for(let j = 0; j < this.dimensions.cols; j++) {
           let cnt = 0;
-          const cellType = f[i][j];
-          console.log(f[i-1])
-          const resArr = [
-            f[i-1][j-1],
-            f[i][j-1],
-            f[i+1][j-1],
-            f[i+1][j],
-            f[i+1][j+1],
-            f[i][j+1],
-            f[i-1][j+1],
-            f[i-1][j]
+          let resArr;
+          console.log(2);
+          if(i === 0) {
+            if(j === 0) {
+              resArr = [
+                   f[i+1][j],
+                   f[i+1][j+1],
+                   f[i][j+1]
+                  ];
+            } else if(j === this.dimensions.cols - 1) {
+            resArr = [
+              f[i][j-1],
+              f[i+1][j-1],
+              f[i+1][j]
             ];
-            console.log(resArr);
+            } else {
+              resArr = [
+                f[i][j-1],
+                f[i+1][j-1],
+                f[i+1][j],
+                f[i+1][j+1],
+                f[i][j+1]
+              ];
+            }
+          } else if(i === this.dimensions.rows - 1) {
+            if(j = 0) {
+              resArr = [
+                f[i-1][j],
+                f[i-1][j+1],
+                f[i][j+1]
+              ]
+            } else if(j === this.dimensions.cols - 1) {
+              resArr = [
+                f[i][j-1],
+                f[i-1][j-1],
+                f[i-1][j]
+              ];
+            } else {
+              resArr = [
+                f[i][j-1],
+                f[i-1][j-1],
+                f[i-1][j],
+                f[i-1][j+1],
+                f[i][j+1]
+              ];
+            }
+          } else {
+            if(j === 0) {
+              resArr = [
+                f[i-1][j],
+                f[i-1][j+1],
+                f[i][j+1],
+                f[i+1][j+1],
+                f[i+1][j]
+              ];
+            } else if(j === this.dimensions.cols - 1) {
+              resArr = [
+                f[i-1][j],
+                f[i-1][j-1],                
+                f[i][j-1],
+                f[i+1][j-1],
+                f[i+1][j]
+              ];
+            } else {
+              resArr = [
+                f[i-1][j-1],
+                f[i][j-1],
+                f[i+1][j-1],
+                f[i+1][j],
+                f[i+1][j+1],
+                f[i][j+1],
+                f[i-1][j+1],
+                f[i-1][j]
+              ];
+            }
+          }
+
             resArr.forEach(x => {
               if(x === true) cnt++;
             });
-            switch(cnt) {
+            if(this.tmblr === false) {
+              switch(cnt) {
               case (cnt < 2):
               fn[i][j] = false;
               break;
@@ -98,23 +179,38 @@ export default {
               case (cnt > 3):
               fn[i][j] = false;
               break;
-              default:
-              throw new Error('Error in defining cell type');
+              }
+            } else {
+              switch(cnt) {
+              case (cnt < 2):
+              f[i][j] = false;
+              break;
+              case (cnt === 2):
+              f[i][j] = fn[i][j];
+              break;
+              case (cnt === 3):
+              f[i][j] = true;
+              break;
+              case (cnt > 3):
+              f[i][j] = false;
+              break;
+              }
             }
+
         }
       }
     },
     switchGenerations() {
-      this.playfield = this.nextTurn;
+      this.tmblr = !this.tmblr;
     },
-    setType(i, j) {
-      this.$set(this.playfield[i], j, !this.playfield[i][j]);
+    setType(field, i, j) {
+      this.$set(field[i], j, !field[i][j]);
     }
   },
   computed: {
-    statusCell(row, cell) {
-      return (row, cell) => {
-        switch (this.playfield[row][cell]) {
+    statusCell(field, row, cell) {
+      return (field, row, cell) => {
+        switch (field[row][cell]) {
           case false:
             return "cell-dead";
             break;
@@ -136,13 +232,21 @@ export default {
 <style scoped>
 .playfield {
   display: flex;
-  align-content: space-between;
+  flex-direction: column;
   justify-content: center;
+  align-items: center;
 }
+
+.playfield-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
 .playfield-cell {
   border: 1px solid green;
-  width: 15px;
-  height: 15px;
+  width: 25px;
+  height: 25px;
   margin: 10px;
 }
 
